@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Dukaan OS - Hyperlocal Search Engine</title>
+  
+  <!-- Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* Global Design System - Dukaan OS (High Contrast Sunlight Friendly) */
+    :root {
+      --primary: #5f259f; /* PhonePe Indigo */
+      --primary-hover: #4a1a7e;
+      --secondary: #2563eb; /* Blue */
+      --accent: #ff9900; /* Amazon Yellow/Orange */
+      --accent-hover: #e68a00;
+      --success: #10b981; /* Green */
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --background: #f4f5f7;
+      --card-bg: #ffffff;
+      --text-main: #1f2937; /* Very dark slate for sunlight legibility */
+      --text-muted: #4b5563;
+      --border-color: #d1d5db;
+      --border-thick: #111111;
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+      --shadow-md: 0 4px 6px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.1);
+      --shadow-flat: 4px 4px 0px 0px #111111; /* Cool flat retro-modern border shadow */
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--background);
+      color: var(--text-main);
+      line-height: 1.5;
+      font-size: 16px;
+      padding: 20px 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    /* Mobile Emulator Frame */
+    .phone-frame {
+      width: 100%;
+      max-width: 450px;
+      height: 820px;
+      background-color: #ffffff;
+      border: 6px solid var(--border-thick);
+      border-radius: 36px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), var(--shadow-flat);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Phone Speaker/Camera Notch */
+    .phone-notch {
+      width: 130px;
+      height: 20px;
+      background-color: var(--border-thick);
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      border-bottom-left-radius: 12px;
+      border-bottom-right-radius: 12px;
+      z-index: 10001;
+    }
+
+    /* Screen Content */
+    .screen-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 50px 16px 70px 16px; /* Space for notch & bottom nav */
+      background-color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    /* Header styling */
+    .header-bar {
+      background-color: var(--primary);
+      color: #ffffff;
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 1000;
+      border-bottom: 2px solid var(--border-thick);
+      padding-top: 18px; /* Offset for notch visual balance */
+    }
+
+    /* Responsive styling for actual mobile viewports */
+    @media (max-width: 480px) {
+      body {
+        padding: 0;
+        background-color: #ffffff;
+      }
+      
+      .phone-frame {
+        max-width: 100%;
+        height: 100vh;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+      }
+      
+      .phone-notch {
+        display: none;
+      }
+      
+      .screen-content {
+        padding-top: 50px; /* standard header height with no notch offset */
+        padding-bottom: 60px;
+      }
+      
+      .header-bar {
+        padding-top: 12px; /* standard top padding */
+        padding-bottom: 12px;
+      }
+    }
+
+    .header-logo {
+      font-weight: 800;
+      font-size: 18px;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .header-logo span {
+      background-color: var(--accent);
+      color: var(--border-thick);
+      padding: 1px 5px;
+      border-radius: var(--radius-sm);
+      font-size: 10px;
+      font-weight: 900;
+      border: 1px solid var(--border-thick);
+    }
+
+    .header-status-badge {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background-color: #ffffff;
+      color: #111111;
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 800;
+      border: 1px solid #111111;
+      cursor: pointer;
+    }
+
+    /* Bottom navigation bar for mobile */
+    .nav-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: #ffffff;
+      border-top: 2px solid var(--border-thick);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      padding: 6px 0 10px 0;
+      z-index: 1000;
+      box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 9px;
+      font-weight: 700;
+      cursor: pointer;
+      background: none;
+      border: none;
+      gap: 2px;
+    }
+
+    .nav-item.active {
+      color: var(--primary);
+    }
+
+    /* Utility buttons & tags */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      border: 2px solid var(--border-thick);
+      cursor: pointer;
+      transition: transform 0.1s ease;
+      text-align: center;
+      gap: 6px;
+      text-decoration: none;
+      font-size: 13px;
+    }
+
+    .btn:active {
+      transform: translateY(2px);
+    }
+
+    .btn-block {
+      width: 100%;
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+      color: #ffffff;
+    }
+
+    .btn-accent {
+      background-color: var(--accent);
+      color: var(--border-thick);
+    }
+
+    .btn-secondary {
+      background-color: #ffffff;
+      color: var(--border-thick);
+    }
+
+    .btn-success {
+      background-color: var(--success);
+      color: white;
+    }
+
+    .btn-danger {
+      background-color: var(--danger);
+      color: white;
+    }
+
+    /* Badge styling */
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      font-size: 8px;
+      font-weight: 800;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-thick);
+      text-transform: uppercase;
+    }
+
+    .badge-partner {
+      background-color: #e0f2fe;
+      color: #0369a1;
+      border-color: #0369a1;
+    }
+
+    .badge-verified {
+      background-color: #d1fae5;
+      color: #065f46;
+      border-color: #065f46;
+    }
+
+    /* Forms & Inputs */
+    .form-input {
+      width: 100%;
+      padding: 10px;
+      border: 2px solid var(--border-thick);
+      border-radius: var(--radius-md);
+      outline: none;
+      font-size: 14px;
+      color: var(--text-main);
+      background-color: #f9fafb;
+    }
+
+    .form-input:focus {
+      background-color: #ffffff;
+      border-color: var(--primary);
+    }
+
+    /* Cards & Layout panels */
+    .card {
+      background-color: var(--card-bg);
+      border: 2px solid var(--border-thick);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      margin-bottom: 14px;
+      position: relative;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .card-shadow {
+      box-shadow: var(--shadow-flat);
+    }
+
+    /* Search results and lists */
+    .results-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .product-item {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .product-img {
+      width: 70px;
+      height: 70px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-thick);
+      object-fit: cover;
+    }
+
+    .product-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .product-name {
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .product-price {
+      font-size: 16px;
+      font-weight: 900;
+      color: var(--primary);
+    }
+
+    .stock-tag {
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .stock-available {
+      color: var(--success);
+    }
+
+    .stock-likely {
+      color: var(--warning);
+    }
+
+    .stock-out {
+      color: var(--danger);
+    }
+
+    /* Modals */
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0,0,0,0.6);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 20000;
+    }
+
+    .modal-content {
+      background-color: #ffffff;
+      width: 100%;
+      border-top-left-radius: var(--radius-lg);
+      border-top-right-radius: var(--radius-lg);
+      border-top: 3px solid var(--border-thick);
+      padding: 20px 16px;
+      box-shadow: 0 -10px 25px rgba(0,0,0,0.15);
+    }
+
+    /* Map styles */
+    .map-container {
+      height: 100%;
+      width: 100%;
+      border: none;
+      position: relative;
+    }
+
+    /* Grid helper */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    /* View hide/show switcher */
+    .view-panel {
+      display: none;
+    }
+    .view-panel.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+    
+    <!-- Header -->
+    <header class="header-bar">
+      <div class="header-logo" onclick="switchTab('/')" style="cursor:pointer;">
+        DUKAAN OS <span>MVP</span>
+      </div>
+      <div id="headerCoins" class="header-status-badge" onclick="switchTab('/customer?tab=coins')">
+        <span>🪙</span>
+        <span id="headerCoinCount">0</span>
+      </div>
+    </header>
+
+    <!-- Main Screens Container -->
+    <div class="screen-content">
+      
+      <!-- SCREEN 1: SEARCH ENGINE (HOME) -->
+      <div id="viewSearch" class="view-panel active">
+        <!-- Search Controls -->
+        <div class="card card-shadow" style="padding: 10px; margin-bottom: 10px;">
+          <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 8px;">
+            <div style="position: relative; flex: 1;">
+              <input
+                type="text"
+                id="searchInput"
+                placeholder="Search tractor filter, oil, seeds..."
+                class="form-input"
+                style="padding-left: 32px;"
+              >
+              <i data-lucide="search" style="position: absolute; left: 10px; top: 12px; color: #666; width: 16px; height: 16px;"></i>
+            </div>
+            <div style="display: flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 800; background-color: #e2e8f0; padding: 11px 8px; border-radius: 8px; border: 2px solid #111;">
+              <i data-lucide="map-pin" style="width: 12px; height: 12px;"></i>
+              <span>JIND</span>
+            </div>
+          </div>
+          <!-- Category list -->
+          <div style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px;">
+            <button class="cat-btn btn-accent" style="padding:4px 10px; border-radius:12px; font-size:11px; font-weight:700; border:1px solid #111; cursor:pointer;" onclick="setSearchCategory('All')">All</button>
+            <button class="cat-btn" style="padding:4px 10px; border-radius:12px; font-size:11px; font-weight:700; border:1px solid #111; cursor:pointer; background:#fff;" onclick="setSearchCategory('Tractor Spares')">Tractor Spares</button>
+            <button class="cat-btn" style="padding:4px 10px; border-radius:12px; font-size:11px; font-weight:700; border:1px solid #111; cursor:pointer; background:#fff;" onclick="setSearchCategory('Lubricants')">Lubricants</button>
+            <button class="cat-btn" style="padding:4px 10px; border-radius:12px; font-size:11px; font-weight:700; border:1px solid #111; cursor:pointer; background:#fff;" onclick="setSearchCategory('Fertilizer')">Fertilizer</button>
+            <button class="cat-btn" style="padding:4px 10px; border-radius:12px; font-size:11px; font-weight:700; border:1px solid #111; cursor:pointer; background:#fff;" onclick="setSearchCategory('Tools')">Tools</button>
+          </div>
+        </div>
+
+        <h3 id="searchTitle" style="font-size: 11px; font-weight: 900; margin-bottom: 10px; text-transform: uppercase; color:#666; tracking-wide: 1px;">⚡ Recommended Spares (Top Partners)</h3>
+        <div id="searchResultsList" class="results-list"></div>
+      </div>
+
+      <!-- SCREEN 2: UNIVERSAL SHOP WEBSITE -->
+      <div id="viewShop" class="view-panel">
+        <button class="btn btn-secondary" style="padding: 4px 8px; font-size:11px; margin-bottom: 10px; width: auto;" onclick="switchTab('/')">
+          <i data-lucide="arrow-left" style="width:12px; height:12px;"></i> Back to Search
+        </button>
+
+        <div class="card card-shadow" style="padding: 0; overflow: hidden; margin-bottom: 10px;">
+          <img id="shopBanner" src="" style="width:100%; height:90px; object-fit:cover; border-bottom:2px solid #111;">
+          <div style="padding: 10px;">
+            <div style="display:flex; gap:10px; align-items:center; margin-bottom:4px;">
+              <img id="shopLogo" src="" style="width:40px; height:40px; border-radius:50%; border:2px solid #111; object-fit:cover;">
+              <div>
+                <h2 id="shopName" style="font-size: 16px; font-weight: 900; line-height:1.2;">Shop Name</h2>
+                <div id="shopBadges" style="margin-top: 2px; display: flex; gap: 4px; flex-wrap: wrap;"></div>
+              </div>
+            </div>
+            
+            <p id="shopDesc" style="font-size: 12px; color: #4b5563; margin-top: 6px;"></p>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; border:1px solid #111; border-radius: 6px; margin: 10px 0; background:#f9fafb; font-size: 12px; overflow:hidden;">
+              <div style="text-align: center; padding: 4px; border-right: 1px solid #111;">
+                <strong>★ <span id="shopRating">4.0</span></strong>
+                <div style="font-size:9px; color:#666;">Reviews</div>
+              </div>
+              <div style="text-align: center; padding: 4px;">
+                <strong style="color:var(--primary);"><span id="shopBuyers">0</span></strong>
+                <div style="font-size:9px; color:#666;">Monthly Buyers</div>
+              </div>
+            </div>
+
+            <div style="font-size:11px; margin-bottom:10px; color:#555; line-height:1.4;">
+              <div id="shopInfoAddress"></div>
+              <div style="margin-top:2px;">Open: 9:00 AM - 7:00 PM (All Days)</div>
+            </div>
+
+            <div class="grid-2">
+              <a href="#" id="shopCall" class="btn btn-secondary" style="padding:6px;"><i data-lucide="phone" style="width:14px; height:14px;"></i> Call</a>
+              <a href="#" id="shopDirections" target="_blank" class="btn btn-secondary" style="padding:6px;"><i data-lucide="navigation" style="width:14px; height:14px;"></i> Directions</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="map-container" id="shopMap" style="height:150px; border:2px solid #111; border-radius:6px; margin-bottom:12px;"></div>
+
+        <h3 style="font-size: 14px; font-weight: 900; margin-bottom: 10px;">Product Catalog</h3>
+        <div id="shopProductsList" class="results-list"></div>
+      </div>
+
+      <!-- SCREEN 3: ACCOUNT PORTAL -->
+      <div id="viewCustomer" class="view-panel">
+        
+        <!-- Standard Login -->
+        <div id="customerAuthPanel" class="card card-shadow" style="padding: 16px;">
+          <h2 style="font-size: 18px; font-weight: 900; text-align: center; margin-bottom: 6px;">Account Access</h2>
+          <p style="font-size:12px; color:#666; text-align:center; margin-bottom:16px;">Login with your phone number to check coins and active tickets.</p>
+          
+          <div id="phoneInputStep" style="margin-bottom: 12px;">
+            <label style="font-size:10px; font-weight:800; display:block; margin-bottom:4px;">MOBILE NUMBER</label>
+            <input type="text" id="custPhoneInput" class="form-input" placeholder="e.g. 9466778899">
+          </div>
+          <div id="otpInputStep" style="margin-bottom: 12px; display:none;">
+            <label style="font-size:10px; font-weight:800; display:block; margin-bottom:4px;">ENTER 4-DIGIT OTP</label>
+            <input type="text" id="custOtpInput" placeholder="e.g. 1234" class="form-input text-center font-bold tracking-widest" maxLength="4">
+          </div>
+          <button id="custAuthBtn" class="btn btn-primary btn-block" onclick="customerSendOtp()">Send Verification OTP</button>
+        </div>
+
+        <!-- First time Register details -->
+        <div id="customerRegisterPanel" class="card card-shadow" style="padding: 16px; display:none;">
+          <h2 style="font-size: 18px; font-weight: 900; text-align: center; margin-bottom: 6px;">Register Profile</h2>
+          <p style="font-size:12px; color:#666; text-align:center; margin-bottom:16px;">Provide your details to complete your first login.</p>
+          <div style="margin-bottom: 12px;">
+            <label style="font-size:10px; font-weight:800; display:block; margin-bottom:4px;">FULL NAME</label>
+            <input type="text" id="custRegNameInput" placeholder="e.g. Ramesh Singh" class="form-input">
+          </div>
+          <button class="btn btn-primary btn-block" onclick="customerRegisterSubmit()">Create Wallet Profile</button>
+        </div>
+
+        <!-- Dashboard -->
+        <div id="customerDashboard" style="display: none;">
+          <div class="card card-shadow" style="background-color: var(--primary); color: white; border-color:#111; padding: 12px; margin-bottom:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <h3 id="custProfileName" style="font-weight:900; font-size:16px;">Customer Name</h3>
+                <p id="custProfilePhone" style="font-size:11px; opacity:0.8;"></p>
+                <p style="font-size:9.5px; opacity:0.7; margin-top:2px;">Member since: 06/30/2026</p>
+              </div>
+              <button class="btn btn-secondary" style="padding:2px 6px; font-size:9px; border-radius:4px;" onclick="customerLogout()">Logout</button>
+            </div>
+            
+            <!-- SuperCoins summary box -->
+            <div onclick="switchTab('/customer?tab=coins')" style="background:white; color:#111; border:2px solid #111; border-radius:8px; padding:10px; margin-top:10px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span>🪙</span>
+                <div>
+                  <div style="font-size:8px; color:#666; font-weight:700; text-transform:uppercase;">SuperCoins Balance</div>
+                  <div style="font-size:15px; font-weight:900; color:var(--primary);"><span id="custCoins">0</span> Coins</div>
+                </div>
+              </div>
+              <span style="font-size:10px; font-weight:bold; color:var(--primary);">Ledger Details &gt;</span>
+            </div>
+          </div>
+
+          <!-- Reservation Statistics -->
+          <h3 style="font-size: 11px; font-weight: 900; color:#666; text-transform: uppercase; margin-bottom:6px;">📊 Reservation Statistics</h3>
+          <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:6px; text-align:center; font-size:11px; font-weight:bold; margin-bottom:14px;">
+            <div style="background:#f1f5f9; border:1px solid #111; border-radius:4px; padding:4px;">
+              <span id="statTotal" style="display:block; font-size:14px; font-weight:900;">0</span>
+              <span style="font-size:8px; color:#666; text-transform:uppercase;">Total</span>
+            </div>
+            <div style="background:#d1fae5; border:1px solid #111; border-radius:4px; padding:4px;">
+              <span id="statConfirmed" style="display:block; font-size:14px; font-weight:900; color:#10b981;">0</span>
+              <span style="font-size:8px; color:#666; text-transform:uppercase;">Done</span>
+            </div>
+            <div style="background:#e0f2fe; border:1px solid #111; border-radius:4px; padding:4px;">
+              <span id="statActive" style="display:block; font-size:14px; font-weight:900; color:#2563eb;">0</span>
+              <span style="font-size:8px; color:#666; text-transform:uppercase;">Active</span>
+            </div>
+            <div style="background:#fee2e2; border:1px solid #111; border-radius:4px; padding:4px;">
+              <span id="statCancelled" style="display:block; font-size:14px; font-weight:900; color:#ef4444;">0</span>
+              <span style="font-size:8px; color:#666; text-transform:uppercase;">Cancel</span>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h3 style="font-size: 12px; font-weight: 900; text-transform: uppercase;">Reservations Ledger</h3>
+            <select id="custResFilterSelect" onchange="renderCustomerDashboard()" style="font-size:10px; font-weight:bold; padding:2px; border:1px solid #111; border-radius:4px;">
+              <option value="all">All Statuses</option>
+              <option value="reserved">Reserved</option>
+              <option value="visited">Visited</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+
+          <div id="customerReservationsList" style="display:flex; flex-direction:column; gap:10px;"></div>
+        </div>
+
+        <!-- SuperCoins detailed ledger subview -->
+        <div id="customerCoinsLedger" style="display:none;">
+          <button class="btn btn-secondary" style="padding: 4px 8px; font-size:11px; margin-bottom: 12px; width: auto;" onclick="switchTab('/customer')">
+            <i data-lucide="arrow-left" style="width:12px; height:12px;"></i> Back to Profile
+          </button>
+
+          <div class="card card-shadow" style="background:var(--primary); color:white; border-color:#111; padding:16px; margin-bottom:16px;">
+            <p style="font-size:9px; font-weight:bold; color:#d8b4fe; text-transform:uppercase;">Current Coin Balance</p>
+            <h2 style="font-size:24px; font-weight:900; margin-top:2px;">🪙 <span id="ledgerCoinCount">0</span> Coins</h2>
+            
+            <div style="display:grid; grid-template-columns:1fr 1fr; border-top:1px solid #7c3aed; margin-top:12px; pt:8px; font-size:12px; padding-top:8px;">
+              <div>
+                <span style="font-size:9px; opacity:0.8;">LIFETIME EARNED</span>
+                <div style="font-weight:bold; font-size:14px;">🪙 <span id="ledgerLifetimeEarned">0</span></div>
+              </div>
+              <div style="text-align:right;">
+                <span style="font-size:9px; opacity:0.8;">LIFETIME SPENT</span>
+                <div style="font-weight:bold; font-size:14px;">🪙 <span id="ledgerLifetimeSpent">0</span></div>
+              </div>
+            </div>
+          </div>
+
+          <h3 style="font-size:11px; font-weight:900; color:#666; text-transform:uppercase; margin-bottom:8px;">Transaction History</h3>
+          <div id="ledgerHistoryList" style="display:flex; flex-direction:column; gap:8px;"></div>
+        </div>
+
+      </div>
+
+      <!-- SCREEN 4: EXPLORE MAP -->
+      <div id="viewExploreMap" class="view-panel" style="height: calc(100vh - 120px); margin: -50px -16px -70px -16px; position:relative;">
+        <div class="map-container" id="exploreMap"></div>
+        <!-- Float Legend -->
+        <div style="position:absolute; top:60px; left:12px; z-index:10002; background:white; border:2px solid #111; padding:6px; border-radius:6px; font-size:10px; font-weight:bold; pointer-events:none; box-shadow:2px 2px 0px 0px #111;">
+          <span style="color:#666; font-size:8px; display:block; text-transform:uppercase; margin-bottom:2px;">Legend</span>
+          <div style="display:flex; align-items:center; gap:4px; margin-bottom:2px;"><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--primary);"></span> Top Partners</div>
+          <div style="display:flex; align-items:center; gap:4px;"><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#2563eb;"></span> Standard Shops</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Navigation tabs (Shoppers Only: 3 Tabs) -->
+    <nav class="nav-bar">
+      <button class="nav-item active" id="navHome" onclick="switchTab('/')">
+        <i data-lucide="search"></i>
+        <span>Home</span>
+      </button>
+      <button class="nav-item" id="navMap" onclick="switchTab('/map')">
+        <i data-lucide="map"></i>
+        <span>Explore Map</span>
+      </button>
+      <button class="nav-item" id="navCustomer" onclick="switchTab('/customer')">
+        <i data-lucide="user"></i>
+        <span>Account</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <!-- Reservation Modal overlay -->
+  <div class="modal-overlay" id="reserveModal">
+    <div class="modal-content">
+      <h3 style="font-size: 16px; font-weight: 900; margin-bottom: 6px;">Confirm Reservation Ticket</h3>
+      <p style="font-size: 11px; color:#666; margin-bottom: 12px;">Reserve item today to guarantee stock. Walk in and pay at store.</p>
+      
+      <div style="background:#f3f4f6; border:1px solid #111; padding:10px; border-radius:6px; margin-bottom:12px; font-size:13px;">
+        <div style="font-weight:800;" id="modalProdName">Tractor Filter</div>
+        <div style="display:flex; justify-content:space-between; border-top:1px solid #ddd; margin-top:8px; padding-top:6px;">
+          <span>Price to Pay:</span>
+          <strong style="color:var(--primary);" id="modalProdPrice">₹0</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-top:4px;">
+          <span>Coins Reward:</span>
+          <strong style="color:var(--success);" id="modalProdCoins">+0 Coins</strong>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <button class="btn btn-primary" onclick="execReserve()">Confirm Reserve</button>
+        <button class="btn btn-secondary" onclick="closeReserveModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Success Modal overlay -->
+  <div class="modal-overlay" id="successModal">
+    <div class="modal-content" style="text-align: center;">
+      <i data-lucide="check-circle" style="color:var(--success); width:40px; height:40px; margin: 0 auto 8px;"></i>
+      <h3 style="font-size: 18px; font-weight: 900; margin-bottom: 4px;">Ticket Booked Successfully!</h3>
+      <p style="font-size: 13px;">Your Ticket ID is <strong style="color:var(--primary); font-size:16px;" id="successCode">DKS-0000</strong>.</p>
+      
+      <div style="background:#f9fafb; border:1px solid #111; padding:10px; border-radius:6px; margin: 12px 0; text-align: left; font-size: 12px;">
+        <strong>Next Steps:</strong>
+        <ol style="margin-top: 4px; padding-left: 14px; font-weight: 600;">
+          <li>Visit the store location</li>
+          <li>Provide ticket ID to shopkeeper</li>
+          <li>Collect item and get reward coins instantly!</li>
+        </ol>
+      </div>
+
+      <div class="grid-2">
+        <button id="successWaBtn" class="btn btn-secondary" style="color:#25d366;"><i data-lucide="message-square"></i> Share</button>
+        <button class="btn btn-primary" onclick="closeSuccessModal()">Okay</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet Map Script CDN -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <script>
+    // Empty default lists
+    const defaultShops = [];
+    const defaultProducts = [];
+    const defaultReservations = [];
+    const defaultCustomers = [];
+
+    // DB Manager
+    const db = {
+      init() {
+        if (!localStorage.getItem('dos_shops')) localStorage.setItem('dos_shops', JSON.stringify(defaultShops));
+        if (!localStorage.getItem('dos_products')) localStorage.setItem('dos_products', JSON.stringify(defaultProducts));
+        if (!localStorage.getItem('dos_reservations')) localStorage.setItem('dos_reservations', JSON.stringify(defaultReservations));
+        if (!localStorage.getItem('dos_customers')) localStorage.setItem('dos_customers', JSON.stringify(defaultCustomers));
+      },
+      get(key) { return JSON.parse(localStorage.getItem('dos_' + key) || '[]'); },
+      save(key, val) { localStorage.setItem('dos_' + key, JSON.stringify(val)); },
+      getCurrentUser() { return JSON.parse(localStorage.getItem('dos_current_user') || 'null'); }
+    };
+    db.init();
+
+    // App Global State
+    let currentCategory = 'All';
+    let userLocation = { lat: 29.3250, lng: 76.3150 }; // Jind center
+    let leafletExploreMap = null;
+    let leafletShopMap = null;
+    let selectedProductToReserve = null;
+    let customerResFilter = 'all';
+    let simulatedAuthResult = null;
+
+    // Haversine Distance
+    function getDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+      return (R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)))).toFixed(1);
+    }
+
+    // Relative Time
+    function getUpdatedTimeString(isoString) {
+      if (!isoString) return "Recently";
+      const diffMs = new Date() - new Date(isoString);
+      const diffHours = Math.floor(diffMs / 3600000);
+      if (diffHours <= 0) return `${Math.floor(diffMs / 60000) || 2} mins ago`;
+      if (diffHours < 24) return `${diffHours} hours ago`;
+      return `${Math.floor(diffHours / 24)} days ago`;
+    }
+
+    // Initialize/Render Search View (Home)
+    function renderSearchView() {
+      const query = document.getElementById('searchInput').value.trim().toLowerCase();
+      const listContainer = document.getElementById('searchResultsList');
+      const searchTitle = document.getElementById('searchTitle');
+      listContainer.innerHTML = '';
+
+      const products = db.get('products');
+      const shops = db.get('shops');
+      
+      const results = [];
+      products.forEach(p => {
+        const shop = shops.find(s => s.id === p.shopId);
+        if (!shop) return;
+
+        if (currentCategory !== 'All' && p.category !== currentCategory) return;
+
+        let match = false;
+        let exactMatch = 0;
+        if (!query) {
+          match = true;
+        } else {
+          const name = p.name.toLowerCase();
+          const shopN = shop.name.toLowerCase();
+          if (name.includes(query) || shopN.includes(query)) {
+            match = true;
+            if (name.startsWith(query)) exactMatch = 1;
+          }
+        }
+
+        if (match) {
+          const dist = parseFloat(getDistance(userLocation.lat, userLocation.lng, shop.lat, shop.lng));
+          results.push({ ...p, shop, distance: dist, exactMatch });
+        }
+      });
+
+      // Hyperlocal Sorting Algorithm
+      results.sort((a,b) => {
+        if (b.exactMatch !== a.exactMatch) return b.exactMatch - a.exactMatch;
+        if (a.distance !== b.distance) return a.distance - b.distance;
+        
+        const aPartner = a.shop.topPartner ? 1 : 0;
+        const bPartner = b.shop.topPartner ? 1 : 0;
+        if (bPartner !== aPartner) return bPartner - aPartner;
+
+        return b.shop.rating - a.shop.rating;
+      });
+
+      if (query) {
+        searchTitle.innerText = `Search Results (${results.length})`;
+      } else {
+        searchTitle.innerText = `⚡ Recommended Spares (Top Partners)`;
+      }
+
+      if (results.length === 0) {
+        listContainer.innerHTML = `<div style="text-align:center; padding:30px; font-weight:700; color:#999; font-size:12px;">No items found matching search filters.</div>`;
+        return;
+      }
+
+      results.forEach(item => {
+        const waText = `Hello ${item.shop.owner}, I want to reserve ${item.name} for ₹${item.price} on Dukaan OS. Is it available in stock today?`;
+        const waUrl = `https://wa.me/${item.shop.phone.replace('+', '')}?text=${encodeURIComponent(waText)}`;
+        const gMaps = `https://www.google.com/maps/dir/?api=1&destination=${item.shop.lat},${item.shop.lng}`;
+
+        const card = document.createElement('div');
+        card.className = 'card card-shadow';
+        card.style.padding = '10px';
+        card.innerHTML = `
+          <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding-bottom:6px; margin-bottom:8px; font-size:12px;">
+            <div>
+              <a href="#" style="color:var(--primary); font-weight:800;" onclick="viewShopPage('${item.shopId}'); return false;">${item.shopName}</a>
+              ${item.shop.topPartner ? '<span class="badge badge-partner" style="scale:0.8; transform-origin:left; margin-left:3px;">Top Partner</span>' : ''}
+            </div>
+            <div style="text-align:right;">
+              <strong>${item.distance} km</strong>
+              <div style="font-size:9px; color:#666;">${item.shop.monthlyBuyers} buyers</div>
+            </div>
+          </div>
+          
+          <div class="product-item">
+            <img src="${item.image}" class="product-img">
+            <div class="product-info">
+              <div>
+                <div class="product-name">${item.name}</div>
+                <div style="font-size:10px; color:#666; margin-top:2px;">
+                  <span class="stock-tag ${item.stockStatus === 'Available' ? 'stock-available' : item.stockStatus === 'Likely Available' ? 'stock-likely' : 'stock-out'}">● ${item.stockStatus}</span>
+                  • Updated ${getUpdatedTimeString(item.updatedAt)}
+                </div>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+                <span class="product-price">₹${item.price}</span>
+                <span style="font-size:10px; font-weight:800; background:#fef3c7; border:1px solid #f59e0b; padding:1px 4px; border-radius:4px; color:#92400e;">+${item.rewardCoins} Coins</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            ${item.stockStatus !== 'Out of Stock' ? `<button class="btn btn-accent" style="padding:6px; font-size:11px;" onclick="triggerReserve('${item.id}')"><i data-lucide="calendar" style="width:12px; height:12px;"></i> Reserve</button>` : `<button class="btn btn-secondary" style="padding:6px; font-size:11px; opacity:0.5;" disabled>Out of Stock</button>`}
+            <a href="tel:${item.shop.phone}" class="btn btn-secondary" style="padding:6px; font-size:11px;"><i data-lucide="phone" style="width:12px; height:12px;"></i> Call</a>
+          </div>
+          <div class="grid-2" style="margin-top: 6px;">
+            <a href="${waUrl}" target="_blank" class="btn btn-secondary" style="padding:6px; font-size:11px; color:#25d366;"><i data-lucide="message-square" style="width:12px; height:12px;"></i> WhatsApp</a>
+            <a href="${gMaps}" target="_blank" class="btn btn-secondary" style="padding:6px; font-size:11px;"><i data-lucide="navigation" style="width:12px; height:12px;"></i> Directions</a>
+          </div>
+        `;
+        listContainer.appendChild(card);
+      });
+      lucide.createIcons();
+    }
+
+    // Search Category click
+    function setSearchCategory(cat) {
+      currentCategory = cat;
+      const buttons = document.querySelectorAll('.cat-btn');
+      buttons.forEach(btn => {
+        if (btn.innerText === cat) {
+          btn.className = 'cat-btn btn-accent';
+          btn.style.backgroundColor = 'var(--accent)';
+        } else {
+          btn.className = 'cat-btn';
+          btn.style.backgroundColor = '#ffffff';
+        }
+      });
+      renderSearchView();
+    }
+
+    // View Shop Page (Universal Template)
+    function viewShopPage(shopId) {
+      const shops = db.get('shops');
+      const products = db.get('products');
+      const shop = shops.find(s => s.id === shopId);
+      if (!shop) return;
+
+      // Website redirection check
+      if (shop.websiteURL) {
+        window.open(shop.websiteURL, '_blank');
+        return;
+      }
+
+      document.getElementById('shopBanner').src = shop.banner;
+      document.getElementById('shopLogo').src = shop.logo;
+      document.getElementById('shopName').innerText = shop.name;
+      document.getElementById('shopDesc').innerText = shop.description || 'Premium spare parts dealer.';
+      document.getElementById('shopRating').innerText = shop.rating;
+      document.getElementById('shopBuyers').innerText = shop.monthlyBuyers;
+      document.getElementById('shopInfoAddress').innerText = shop.address;
+      document.getElementById('shopCall').href = `tel:${shop.phone}`;
+      document.getElementById('shopDirections').href = `https://www.google.com/maps/dir/?api=1&destination=${shop.lat},${shop.lng}`;
+
+      const badges = document.getElementById('shopBadges');
+      badges.innerHTML = '';
+      badges.innerHTML += `<span class="badge badge-partner" style="background:#ddd; color:#111; border-color:#999;">${shop.plan} Plan</span>`;
+      if (shop.topPartner) badges.innerHTML += `<span class="badge badge-partner" style="margin-left:3px;">Top Partner</span>`;
+      if (shop.verified) badges.innerHTML += `<span class="badge badge-verified" style="margin-left:3px;">Verified Address</span>`;
+
+      // Catalog
+      const catalog = document.getElementById('shopProductsList');
+      catalog.innerHTML = '';
+      const shopProds = products.filter(p => p.shopId === shopId);
+
+      shopProds.forEach(p => {
+        const item = document.createElement('div');
+        item.className = 'card';
+        item.style.padding = '8px';
+        item.innerHTML = `
+          <div class="product-item" style="margin-bottom:6px;">
+            <img src="${p.image}" class="product-img" style="width:50px; height:50px;">
+            <div class="product-info">
+              <div class="product-name" style="font-size:12px;">${p.name}</div>
+              <div style="font-size:9px; color:#666; margin-top:2px;">
+                <span class="stock-tag ${p.stockStatus==='Available'?'stock-available':p.stockStatus==='Likely Available'?'stock-likely':'stock-out'}">● ${p.stockStatus}</span> • Updated ${getUpdatedTimeString(p.updatedAt)}
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:900; font-size:14px;">₹${p.price}</span>
+                <span style="font-size:9px; background:#fef3c7; border:1px solid #f59e0b; padding:1px 3px; border-radius:2px; font-weight:800;">+${p.rewardCoins} Coins</span>
+              </div>
+            </div>
+          </div>
+          ${p.stockStatus !== 'Out of Stock' ? `<button class="btn btn-accent btn-block" style="padding:4px; font-size:11px;" onclick="triggerReserve('${p.id}')">Book Reservation Ticket</button>` : `<button class="btn btn-secondary btn-block" style="padding:4px; font-size:11px; opacity:0.5;" disabled>Out of Stock</button>`}
+        `;
+        catalog.appendChild(item);
+      });
+
+      // Switch View
+      switchView('viewShop');
+      
+      // Load Leaflet Shop Map
+      setTimeout(() => {
+        if (leafletShopMap) {
+          leafletShopMap.remove();
+          leafletShopMap = null;
+        }
+        leafletShopMap = L.map('shopMap', {zoomControl: false, scrollWheelZoom: false}).setView([shop.lat, shop.lng], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(leafletShopMap);
+        L.marker([shop.lat, shop.lng]).addTo(leafletShopMap).bindPopup(shop.name).openPopup();
+      }, 200);
+      
+      lucide.createIcons();
+    }
+
+    // Trigger Reserve Modal
+    function triggerReserve(prodId) {
+      const user = db.getCurrentUser();
+      if (!user || user.role !== 'customer') {
+        alert("Please log in on the Account tab first to reserve.");
+        switchTab('/customer');
+        return;
+      }
+
+      const products = db.get('products');
+      const prod = products.find(p => p.id === prodId);
+      if (!prod) return;
+
+      selectedProductToReserve = prod;
+      document.getElementById('modalProdName').innerText = prod.name;
+      document.getElementById('modalProdPrice').innerText = `₹${prod.price}`;
+      document.getElementById('modalProdCoins').innerText = `+${prod.rewardCoins} Coins`;
+      
+      document.getElementById('reserveModal').style.display = 'flex';
+    }
+
+    function closeReserveModal() {
+      document.getElementById('reserveModal').style.display = 'none';
+    }
+
+    // Execute Reservation Booking
+    function execReserve() {
+      if (!selectedProductToReserve) return;
+      const user = db.getCurrentUser();
+      
+      const rand = Math.floor(1000 + Math.random() * 9000);
+      const code = `DKS-${rand}`;
+
+      const resObj = {
+        id: code,
+        code: code,
+        customerId: user.id,
+        customerName: user.name,
+        customerPhone: user.phone,
+        shopId: selectedProductToReserve.shopId,
+        shopName: selectedProductToReserve.shopName,
+        productId: selectedProductToReserve.id,
+        productName: selectedProductToReserve.name,
+        price: selectedProductToReserve.price,
+        rewardCoins: selectedProductToReserve.rewardCoins,
+        status: 'reserved',
+        createdAt: new Date().toISOString()
+      };
+
+      const reservations = db.get('reservations');
+      reservations.push(resObj);
+      db.save('reservations', reservations);
+
+      // Increment Customer totalReservations count
+      const customers = db.get('customers');
+      const idx = customers.findIndex(c => c.id === user.id);
+      if (idx !== -1) {
+        customers[idx].totalReservations = (customers[idx].totalReservations || 0) + 1;
+        db.save('customers', customers);
+        
+        user.totalReservations = customers[idx].totalReservations;
+        db.save('current_user', user);
+      }
+
+      closeReserveModal();
+      
+      // Load Success Modal details
+      document.getElementById('successCode').innerText = code;
+      const waText = `Hello, I reserved ${resObj.productName} (Code: ${code}) on Dukaan OS. I will visit your shop soon to buy.`;
+      document.getElementById('successWaBtn').onclick = () => {
+        window.open(`https://wa.me/${resObj.shopId}?text=${encodeURIComponent(waText)}`, '_blank');
+      };
+      
+      document.getElementById('successModal').style.display = 'flex';
+      lucide.createIcons();
+    }
+
+    function closeSuccessModal() {
+      document.getElementById('successModal').style.display = 'none';
+      switchTab('/customer');
+    }
+
+    // Simulated Phone OTP Auth Flow
+    function customerSendOtp() {
+      const phone = document.getElementById('custPhoneInput').value;
+      if (!phone) return;
+
+      const customers = db.get('customers');
+      const matched = customers.find(c => c.phone.includes(phone) || phone.includes(c.phone));
+      
+      simulatedAuthResult = {
+        phone,
+        matchedUser: matched
+      };
+
+      // Toggle Inputs
+      document.getElementById('phoneInputStep').style.display = 'none';
+      document.getElementById('otpInputStep').style.display = 'block';
+      
+      const btn = document.getElementById('custAuthBtn');
+      btn.innerText = "Verify Verification OTP";
+      btn.onclick = customerVerifyOtp;
+    }
+
+    function customerVerifyOtp() {
+      const otp = document.getElementById('custOtpInput').value;
+      if (!otp || otp.length < 4) {
+        alert("Please enter 4 digit code");
+        return;
+      }
+
+      if (simulatedAuthResult.matchedUser) {
+        const matched = simulatedAuthResult.matchedUser;
+        db.save('current_user', {
+          role: 'customer', id: matched.id, name: matched.name, phone: matched.phone, superCoins: matched.superCoins || 0, totalReservations: matched.totalReservations || 0, joinedAt: matched.joinedAt || new Date().toISOString()
+        });
+        
+        // Reset Inputs
+        document.getElementById('phoneInputStep').style.display = 'block';
+        document.getElementById('otpInputStep').style.display = 'none';
+        document.getElementById('custOtpInput').value = '';
+        const btn = document.getElementById('custAuthBtn');
+        btn.innerText = "Send Verification OTP";
+        btn.onclick = customerSendOtp;
+
+        renderCustomerDashboard();
+      } else {
+        document.getElementById('customerAuthPanel').style.display = 'none';
+        document.getElementById('customerRegisterPanel').style.display = 'block';
+      }
+    }
+
+    function customerRegisterSubmit() {
+      const name = document.getElementById('custRegNameInput').value;
+      if (!name) return;
+
+      const phone = simulatedAuthResult.phone;
+      const customers = db.get('customers');
+      
+      const newCust = {
+        id: 'c_' + Date.now(),
+        name: name,
+        phone: phone,
+        superCoins: 0,
+        totalReservations: 0,
+        joinedAt: new Date().toISOString()
+      };
+      
+      customers.push(newCust);
+      db.save('customers', customers);
+
+      db.save('current_user', {
+        role: 'customer', id: newCust.id, name: newCust.name, phone: newCust.phone, superCoins: newCust.superCoins, totalReservations: newCust.totalReservations, joinedAt: newCust.joinedAt
+      });
+
+      // Reset
+      document.getElementById('customerRegisterPanel').style.display = 'none';
+      document.getElementById('phoneInputStep').style.display = 'block';
+      document.getElementById('otpInputStep').style.display = 'none';
+      document.getElementById('custRegNameInput').value = '';
+      document.getElementById('custOtpInput').value = '';
+      const btn = document.getElementById('custAuthBtn');
+      btn.innerText = "Send Verification OTP";
+      btn.onclick = customerSendOtp;
+
+      renderCustomerDashboard();
+    }
+
+    function customerLogout() {
+      localStorage.removeItem('dos_current_user');
+      document.getElementById('customerAuthPanel').style.display = 'block';
+      document.getElementById('customerDashboard').style.display = 'none';
+      document.getElementById('customerCoinsLedger').style.display = 'none';
+      updateHeaderState();
+    }
+
+    function renderCustomerDashboard() {
+      const user = db.getCurrentUser();
+      if (!user || user.role !== 'customer') {
+        document.getElementById('customerAuthPanel').style.display = 'block';
+        document.getElementById('customerDashboard').style.display = 'none';
+        document.getElementById('customerCoinsLedger').style.display = 'none';
+        return;
+      }
+
+      document.getElementById('customerAuthPanel').style.display = 'none';
+      document.getElementById('customerDashboard').style.display = 'block';
+      document.getElementById('customerCoinsLedger').style.display = 'none';
+      
+      document.getElementById('custProfileName').innerText = user.name;
+      document.getElementById('custProfilePhone').innerText = user.phone;
+      document.getElementById('custCoins').innerText = user.superCoins;
+
+      const resList = document.getElementById('customerReservationsList');
+      resList.innerHTML = '';
+      
+      const allReservations = db.get('reservations').filter(r => r.customerId === user.id);
+      
+      // Calculate Stats
+      const statTotal = allReservations.length;
+      const statConfirmed = allReservations.filter(r => r.status === 'confirmed').length;
+      const statActive = allReservations.filter(r => r.status === 'reserved' || r.status === 'visited').length;
+      const statCancelled = allReservations.filter(r => r.status === 'cancelled').length;
+
+      document.getElementById('statTotal').innerText = statTotal;
+      document.getElementById('statConfirmed').innerText = statConfirmed;
+      document.getElementById('statActive').innerText = statActive;
+      document.getElementById('statCancelled').innerText = statCancelled;
+
+      const filterKey = document.getElementById('custResFilterSelect').value;
+      const filtered = allReservations.filter(r => {
+        if (filterKey === 'all') return true;
+        return r.status === filterKey;
+      });
+      
+      if (filtered.length === 0) {
+        resList.innerHTML = `<div style="text-align:center; padding:15px; border:2px dashed #ccc; border-radius:6px; font-size:12px; font-weight:700;">No reservations found.</div>`;
+        return;
+      }
+
+      filtered.forEach(r => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.style.padding = '10px';
+        card.style.marginBottom = '0';
+        
+        let statusColor = '#0369a1';
+        let statusBg = '#e0f2fe';
+        if (r.status === 'confirmed') { statusColor = '#065f46'; statusBg = '#d1fae5'; }
+        else if (r.status === 'visited') { statusColor = '#d97706'; statusBg = '#fef3c7'; }
+        else if (r.status === 'cancelled') { statusColor = '#b91c1c'; statusBg = '#fee2e2'; }
+
+        card.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:6px; margin-bottom:6px;">
+            <div>
+              <span style="font-size:9px; color:#666; font-weight:700;">TICKET ID</span>
+              <div style="font-weight:900; color:var(--primary); font-size:14px;">${r.id}</div>
+            </div>
+            <span class="badge" style="background:${statusBg}; color:${statusColor}; border-color:${statusColor}; font-size:9px;">${r.status}</span>
+          </div>
+          <div style="font-size:12px; margin-bottom:8px;">
+            <div style="font-weight:800;">${r.productName}</div>
+            <div style="color:#555; margin-top:2px;">Shop: ${r.shopName}</div>
+            <div style="display:flex; justify-content:space-between; margin-top:6px; font-weight:700; background:#f9fafb; padding:4px; border:1px solid #ddd; border-radius:4px;">
+              <span>Pay: ₹${r.price}</span>
+              <span style="color:var(--success);">Reward: +${r.rewardCoins} Coins</span>
+            </div>
+          </div>
+          ${r.status === 'reserved' ? `
+            <a href="https://wa.me/${r.shopId}?text=Hi" target="_blank" class="btn btn-secondary btn-block" style="padding:4px; font-size:11px; color:#25d366;"><i data-lucide="message-square" style="width:12px; height:12px;"></i> WhatsApp Shop Owner</a>
+          ` : ''}
+        `;
+        resList.appendChild(card);
+      });
+      updateHeaderState();
+      lucide.createIcons();
+    }
+
+    function renderCoinsLedger() {
+      const user = db.getCurrentUser();
+      if (!user || user.role !== 'customer') return;
+
+      document.getElementById('customerDashboard').style.display = 'none';
+      document.getElementById('customerCoinsLedger').style.display = 'block';
+      
+      const allReservations = db.get('reservations').filter(r => r.customerId === user.id);
+      const confirmed = allReservations.filter(r => r.status === 'confirmed');
+      const lifetimeEarned = confirmed.reduce((sum, r) => sum + r.rewardCoins, 0);
+
+      document.getElementById('ledgerCoinCount').innerText = user.superCoins;
+      document.getElementById('ledgerLifetimeEarned').innerText = lifetimeEarned;
+      document.getElementById('ledgerLifetimeSpent').innerText = 0;
+
+      const historyList = document.getElementById('ledgerHistoryList');
+      historyList.innerHTML = '';
+      
+      confirmed.forEach(r => {
+        const item = document.createElement('div');
+        item.style.display = 'flex';
+        item.style.justifyContent = 'space-between';
+        item.style.alignItems = 'center';
+        item.style.background = '#fff';
+        item.style.border = '2px solid #111';
+        item.style.padding = '8px';
+        item.style.borderRadius = '6px';
+        item.innerHTML = `
+          <div>
+            <strong style="font-size:12px; color:var(--success);">Reservation Reward</strong>
+            <p style="font-size:9px; color:#666; margin-top:2px;">Ticket: ${r.id} | Shop: ${r.shopName}</p>
+          </div>
+          <span style="color:var(--success); font-weight:bold; font-size:12px;">+${r.rewardCoins} Coins</span>
+        `;
+        historyList.appendChild(item);
+      });
+    }
+
+    // Header State Sync helper
+    function updateHeaderState() {
+      const user = db.getCurrentUser();
+      const countLabel = document.getElementById('headerCoinCount');
+      const coinsBadge = document.getElementById('headerCoins');
+
+      if (user && user.role === 'customer') {
+        coinsBadge.style.display = 'flex';
+        countLabel.innerText = user.superCoins || 0;
+      } else {
+        coinsBadge.style.display = 'none';
+      }
+    }
+
+    // Dynamic Tab Navigation Switches
+    function switchTab(path) {
+      document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+      
+      if (path === '/') {
+        document.getElementById('navHome').classList.add('active');
+        switchView('viewSearch');
+        renderSearchView();
+      } else if (path === '/map') {
+        document.getElementById('navMap').classList.add('active');
+        switchView('viewExploreMap');
+        setTimeout(initExploreLeafletMap, 100);
+      } else if (path === '/customer') {
+        document.getElementById('navCustomer').classList.add('active');
+        switchView('viewCustomer');
+        renderCustomerDashboard();
+      } else if (path === '/customer?tab=coins') {
+        document.getElementById('navCustomer').classList.add('active');
+        switchView('viewCustomer');
+        document.getElementById('customerAuthPanel').style.display = 'none';
+        document.getElementById('customerDashboard').style.display = 'none';
+        document.getElementById('customerCoinsLedger').style.display = 'block';
+        renderCoinsLedger();
+      }
+    }
+
+    function switchView(viewId) {
+      document.querySelectorAll('.view-panel').forEach(panel => panel.classList.remove('active'));
+      document.getElementById(viewId).classList.add('active');
+    }
+
+    // Initialize/sync explore leaflet map
+    function initExploreLeafletMap() {
+      if (leafletExploreMap) {
+        leafletExploreMap.remove();
+        leafletExploreMap = null;
+      }
+      
+      const shops = db.get('shops');
+      
+      leafletExploreMap = L.map('exploreMap', {
+        zoomControl: true,
+        scrollWheelZoom: false
+      }).setView([userLocation.lat, userLocation.lng], 13);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(leafletExploreMap);
+
+      // User location circle
+      L.circle([userLocation.lat, userLocation.lng], {
+        color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.15, radius: 400
+      }).addTo(leafletExploreMap).bindPopup("Your Location");
+
+      // Shop pins
+      shops.forEach(shop => {
+        const markerColor = shop.sponsored ? '#ef4444' : shop.topPartner ? '#5f259f' : '#2563eb';
+        const customIcon = L.divIcon({
+          className: 'custom-div-icon',
+          html: `<div style="background-color: ${markerColor}; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>`,
+          iconSize: [12, 12]
+        });
+
+        L.marker([shop.lat, shop.lng], { icon: customIcon }).addTo(leafletExploreMap)
+          .bindPopup(`
+            <div style="font-size:12px; font-family:sans-serif; width: 130px;">
+              <strong style="color:var(--primary); font-weight:800; font-size:13px;">${shop.name}</strong><br/>
+              <span style="color:#666; font-size:10px; display:block; margin:2px 0;">${shop.monthlyBuyers} monthly buyers</span>
+              <a href="#" style="background:var(--primary); color:white; font-weight:bold; display:block; text-align:center; padding:3px; text-decoration:none; border-radius:4px; font-size:10px; border:1px solid #111; margin-top:4px;" onclick="viewShopPage('${shop.id}'); return false;">View Store Page</a>
+            </div>
+          `);
+      });
+    }
+
+    // App Boot hooks
+    window.onload = () => {
+      lucide.createIcons();
+      switchTab('/');
+      document.getElementById('searchInput').addEventListener('input', renderSearchView);
+    };
+  </script>
+</body>
+</html>
