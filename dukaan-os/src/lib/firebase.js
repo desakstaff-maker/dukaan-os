@@ -1,3 +1,6 @@
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 import { mockShops, mockProducts, mockCustomers, mockReservations } from './mockData';
 
 // Configuration check for live Firebase
@@ -9,12 +12,7 @@ let auth = null;
 let dbInstance = null;
 
 if (isFirebaseConfigured) {
-  // Dynamic imports/initialization of real Firebase
   try {
-    const { initializeApp } = require('firebase/app');
-    const { getAuth } = require('firebase/auth');
-    const { getFirestore } = require('firebase/firestore');
-    
     const firebaseConfig = {
       apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
       authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -24,7 +22,7 @@ if (isFirebaseConfigured) {
       appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
     };
     
-    const app = initializeApp(firebaseConfig);
+    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     auth = getAuth(app);
     dbInstance = getFirestore(app);
   } catch (err) {
@@ -389,7 +387,7 @@ class LocalStorageDb {
   }
 }
 
-// Live Firebase integration placeholder logic (for vercel builds)
+// Live Firebase integration placeholders
 export const setupRealPhoneAuth = async (phoneNumber, recaptchaVerifier) => {
   if (!auth) throw new Error("Firebase auth not configured");
   const { signInWithPhoneNumber } = await import('firebase/auth');
