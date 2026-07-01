@@ -13,13 +13,13 @@ export default function AccountPage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState(null);
   const [reservations, setReservations] = useState([]);
-  
+
   // Phone Auth State
   const [phoneInput, setPhoneInput] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otpInput, setOtpInput] = useState('');
   const [authConfirmation, setAuthConfirmation] = useState(null);
-  
+
   // Registration State (on first login)
   const [isRegistering, setIsRegistering] = useState(false);
   const [nameInput, setNameInput] = useState('');
@@ -28,7 +28,7 @@ export default function AccountPage() {
 
   useEffect(() => {
     loadUserData();
-    
+
     // Initialize invisible Recaptcha verifier for Firebase Phone Auth
     if (typeof window !== 'undefined' && isLiveFirebase && auth && !window.recaptchaVerifier) {
       try {
@@ -84,9 +84,11 @@ export default function AccountPage() {
         const userPhone = result.user.phoneNumber;
 
         // Check if shopper profile exists in Firestore / Local Cache
-        const customers = db.getCustomers();
-        const matched = customers.find(c => c.id === userUid || c.phone === userPhone);
-        
+        const customers = await db.getCustomers();
+
+        const matched = customers.find(
+          c => c.id === userUid || c.phone === userPhone
+        );
         if (matched) {
           db.setCurrentUser({
             role: 'customer',
@@ -139,9 +141,11 @@ export default function AccountPage() {
           joinedAt: new Date().toISOString()
         };
 
-        const customers = db.getCustomers();
+        const customers = await db.getCustomers();
+
         customers.push(newCust);
-        db.save('customers', customers);
+
+        await db.save('customers', customers);
 
         // Upload to Firestore doc
         const { doc, setDoc } = await import('firebase/firestore');
@@ -213,15 +217,15 @@ export default function AccountPage() {
   return (
     <>
       <Header />
-      
+
       <main className="p-4 flex-1">
-        
+
         {/* Invisible Recaptcha container for Firebase Authentication */}
         <div id="recaptcha-container"></div>
 
         {currentUser && currentUser.role === 'customer' ? (
           <div>
-            
+
             {/* Customer Profile Banner Card */}
             <div className="bg-primary text-white border-2 border-black rounded-lg p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mb-5">
               <div className="flex justify-between items-start">
@@ -230,7 +234,7 @@ export default function AccountPage() {
                   <p className="text-xs text-purple-200 font-semibold">{currentUser.phone}</p>
                   <p className="text-[10px] text-purple-300 font-bold mt-1">Joined: {new Date(currentUser.joinedAt || Date.now()).toLocaleDateString()}</p>
                 </div>
-                <button 
+                <button
                   onClick={handleLogout}
                   className="flex items-center gap-1 text-[10px] font-black tracking-wider uppercase border border-white/55 px-2 py-1 rounded bg-purple-900/30 hover:bg-purple-900/60"
                 >
@@ -239,7 +243,7 @@ export default function AccountPage() {
               </div>
 
               {/* SuperCoins Widget */}
-              <button 
+              <button
                 onClick={() => router.push('/coins')}
                 className="w-full text-left bg-white text-black border-2 border-black rounded-md p-3 mt-4 flex justify-between items-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-0.5"
               >
@@ -280,8 +284,8 @@ export default function AccountPage() {
               <h3 className="text-xs font-black tracking-wider text-slate-500 uppercase">
                 Reservation History ({filteredReservations.length})
               </h3>
-              
-              <select 
+
+              <select
                 className="p-1 border border-black rounded text-[11px] font-bold bg-white"
                 value={resFilter}
                 onChange={(e) => setResFilter(e.target.value)}
@@ -340,7 +344,7 @@ export default function AccountPage() {
 
                       {(res.status === 'reserved' || res.status === 'visited') && (
                         <div className="grid grid-cols-2 gap-2 text-xs">
-                          <a 
+                          <a
                             href={waUrl}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -348,7 +352,7 @@ export default function AccountPage() {
                           >
                             <MessageSquare size={13} /> WhatsApp
                           </a>
-                          <Link 
+                          <Link
                             href={`/shop/${res.shopId}`}
                             className="flex items-center justify-center gap-1 py-1.5 bg-primary text-white border-2 border-black rounded font-black shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] active:translate-y-0.5"
                           >
@@ -393,8 +397,8 @@ export default function AccountPage() {
                 />
               </div>
 
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="w-full py-2.5 bg-primary text-white border-2 border-black rounded-md font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-0.5"
               >
                 Create My Account
@@ -424,8 +428,8 @@ export default function AccountPage() {
                   </div>
                 </div>
 
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="w-full py-2.5 bg-primary text-white border-2 border-black rounded-md font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-0.5"
                 >
                   Send OTP Code
@@ -446,15 +450,15 @@ export default function AccountPage() {
                   {!isLiveFirebase && <p className="text-[10px] text-slate-500 mt-1.5 font-bold text-center">Simulated OTP verification. Enter any 4-digit code to proceed.</p>}
                 </div>
 
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="w-full py-2.5 bg-primary text-white border-2 border-black rounded-md font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-0.5"
                 >
                   Verify OTP
                 </button>
 
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setOtpSent(false)}
                   className="w-full text-center text-xs font-bold text-slate-500 hover:underline"
                 >
