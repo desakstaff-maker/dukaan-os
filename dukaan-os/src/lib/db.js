@@ -729,7 +729,7 @@ export async function createReview(
         }
     );
 }
-
+export const addReview = createReview;
 
 
 export async function getReviews() {
