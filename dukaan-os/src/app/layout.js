@@ -55,9 +55,14 @@ export default function RootLayout({
 
       <body>
 
-        {children}
+  <meta
+    name="mobile-web-app-capable"
+    content="yes"
+  />
 
-      </body>
+  {children}
+
+</body>
 
     </html>
   );
