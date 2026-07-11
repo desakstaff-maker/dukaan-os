@@ -17,10 +17,7 @@ export default function ShopCard({
 
 }) {
 
-  const topPartner =
-    shop?.plan ===
-    'BUSINESS' ||
-    shop?.topPartner;
+
 
 
 
