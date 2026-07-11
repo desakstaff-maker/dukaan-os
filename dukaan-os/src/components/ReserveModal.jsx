@@ -317,60 +317,161 @@ export default function ReserveModal({
 
 </label>
 
-<select
+<div
 
-  className="
-    input
-    mb-2
-  "
+  className="mb-2"
 
-  value={form.quantity}
+  style={{
 
-  onChange={e =>
+    display:'flex',
 
-    setForm({
+    alignItems:'center',
 
-      ...form,
+    gap:10
 
-      quantity: Number(
-
-        e.target.value
-
-      )
-
-    })
-
-  }
+  }}
 
 >
 
-  {
+  <button
 
-    Array.from(
+    type="button"
 
-      { length: maxQty },
+    className="btn"
 
-      (_, i) => (
+    style={{
 
-        <option
+      width:48,
 
-          key={i + 1}
+      height:48,
 
-          value={i + 1}
+      fontSize:22,
 
-        >
+      fontWeight:900
 
-          {i + 1}
+    }}
 
-        </option>
+    onClick={()=>
 
-      )
+      setForm({
 
-    )
+        ...form,
 
-  }
+        quantity:Math.max(
 
-</select>
+          1,
+
+          Number(form.quantity)-1
+
+        )
+
+      })
+
+    }
+
+  >
+
+    −
+
+  </button>
+
+
+
+  <input
+
+    type="number"
+
+    min={1}
+
+    max={maxQty}
+
+    className="input"
+
+    style={{
+
+      textAlign:'center'
+
+    }}
+
+    value={form.quantity}
+
+    onChange={e=>{
+
+      let value=Number(e.target.value);
+
+      if(isNaN(value)) value=1;
+
+      value=Math.max(
+
+        1,
+
+        Math.min(
+
+          maxQty,
+
+          value
+
+        )
+
+      );
+
+      setForm({
+
+        ...form,
+
+        quantity:value
+
+      });
+
+    }}
+
+  />
+
+
+
+  <button
+
+    type="button"
+
+    className="btn"
+
+    style={{
+
+      width:48,
+
+      height:48,
+
+      fontSize:22,
+
+      fontWeight:900
+
+    }}
+
+    onClick={()=>
+
+      setForm({
+
+        ...form,
+
+        quantity:Math.min(
+
+          maxQty,
+
+          Number(form.quantity)+1
+
+        )
+
+      })
+
+    }
+
+  >
+
+    +
+
+  </button>
+
+</div>
 
 
 
