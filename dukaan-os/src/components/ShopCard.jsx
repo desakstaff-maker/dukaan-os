@@ -69,28 +69,34 @@ export default function ShopCard({
 
             <img
 
-  src="/top-partner.png"
+              src="/top-partner.png"
 
-  alt="Top Partner"
+              alt="Top Partner"
 
-  style={{
+              style={{
 
-    position:'absolute',
+                position:
+                  'absolute',
 
-    left:18,
+                top:
+                  125,
 
-    bottom:-20,
+                right:
+                  103,
 
-    width:60,
+                width:
+                  75,
 
-    height:'auto',
+                height:
+                  'auto',
 
-    zIndex:20,
+                zIndex:
+                  5,
 
-    pointerEvents:'none'
-
-  }}
-/>
+                pointerEvents:
+                  'none'
+              }}
+            />
 
           )
         }
