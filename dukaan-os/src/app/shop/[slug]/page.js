@@ -614,40 +614,7 @@ export default function ShopPage() {
 
 
 
-          {
-
-            (
-              shop.topPartner ||
-
-              shop.plan ===
-              'BUSINESS'
-            ) && (
-
-              <img
-
-                src="/top-partner.png"
-
-                alt=""
-
-                style={{
-
-                  position:
-                    'absolute',
-
-                  right:
-                    260,
-
-                  top:
-                    60,
-                  transform: 'rotate(32deg)',
-
-                  width:
-                    70
-                }}
-              />
-
-            )
-          }
+          
 
         </div>
 
