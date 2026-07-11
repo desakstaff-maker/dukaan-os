@@ -313,52 +313,64 @@ export default function ReserveModal({
 
         <label>
 
-          Quantity
+  Quantity
 
-        </label>
+</label>
 
-        <input
+<select
 
-          type="number"
+  className="
+    input
+    mb-2
+  "
 
-          min="1"
+  value={form.quantity}
 
-          max={
-            maxQty
-          }
+  onChange={e =>
 
-          className="
-            input
-            mb-2
-          "
+    setForm({
 
-          value={
-            form.quantity
-          }
+      ...form,
 
-          onChange={
-            e =>
-              setForm({
+      quantity: Number(
 
-                ...form,
+        e.target.value
 
-                quantity:
-                  Math.min(
+      )
 
-                    maxQty,
+    })
 
-                    Math.max(
-                      1,
+  }
 
-                      Number(
-                        e.target
-                          .value
-                      )
-                    )
-                  )
-              })
-          }
-        />
+>
+
+  {
+
+    Array.from(
+
+      { length: maxQty },
+
+      (_, i) => (
+
+        <option
+
+          key={i + 1}
+
+          value={i + 1}
+
+        >
+
+          {i + 1}
+
+        </option>
+
+      )
+
+    )
+
+  }
+
+</select>
 
 
 
